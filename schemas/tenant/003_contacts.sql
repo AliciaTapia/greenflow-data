@@ -27,7 +27,23 @@ CREATE INDEX idx_contacts_email ON contacts(email);
 COMMENT ON TABLE contacts IS 'Individual people linked to accounts. Completely separate from employees.';
 COMMENT ON COLUMN contacts.contact_type IS 'Role of this person in the business relationship';
 
--- Now that contacts exists, add the FK constraint on accounts
-ALTER TABLE accounts
-    ADD CONSTRAINT fk_accounts_primary_contact
-    FOREIGN KEY (primary_contact_id) REFERENCES contacts(id) ON DELETE SET NULL;
+-- Now that contacts exists, add the FK constraint on accounts when present
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = current_schema()
+          AND table_name = 'accounts'
+    ) AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE constraint_schema = current_schema()
+          AND table_name = 'accounts'
+          AND constraint_name = 'fk_accounts_primary_contact'
+    ) THEN
+        ALTER TABLE accounts
+            ADD CONSTRAINT fk_accounts_primary_contact
+            FOREIGN KEY (primary_contact_id) REFERENCES contacts(id) ON DELETE SET NULL;
+    END IF;
+END $$;
