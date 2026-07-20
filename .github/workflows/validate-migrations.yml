@@ -1,0 +1,56 @@
+# GitHub Actions: Validate SQL migrations on every PR
+name: Validate Migrations
+
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+    paths:
+      - 'migrations/**'
+      - 'schemas/**'
+
+jobs:
+  validate-sql:
+    name: Lint & Validate SQL
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: greenflow_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install sqlfluff (SQL linter)
+        run: pip install sqlfluff
+
+      - name: Lint SQL files
+        run: |
+          sqlfluff lint schemas/ --dialect postgres
+
+      - name: Run platform migrations against test DB
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U postgres -d greenflow_test \
+            -f migrations/platform/001_create_platform_schema.sql
+        continue-on-error: false
+
+      - name: Confirm migration success
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U postgres -d greenflow_test \
+            -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'platform';"

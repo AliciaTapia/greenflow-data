@@ -1,0 +1,20 @@
+# CODEOWNERS — greenflow-data
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
+* @AliciaTapia
+
+# Schema files — data team owns all DDL
+/schemas/**        @AliciaTapia
+
+# Migration scripts — high risk, data team must review
+/migrations/**     @AliciaTapia
+
+# Seed data
+/seeds/**          @AliciaTapia
+
+# Documentation
+/docs/**           @AliciaTapia
+
+# CI/CD workflows — devops team owns pipelines
+/.github/**        @AliciaTapia
